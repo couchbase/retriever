@@ -1,79 +1,28 @@
-PACKAGE DOCUMENTATION
+This package exports logging APIs that can be used to log to a file or a remote server
+See the package documentation at [GoDoc] http://godoc.org/github.com/couchbaselabs/retriever/logger
 
-package logger
-    import "github.com/couchbaselabs/retriever/logger"
+Usage:
 
+package main
 
+import (
+        "github.com/couchbaselabs/retriever/logger"d
+)                                                                                                                   
 
-CONSTANTS
+var rl logger.LogWriter
+const DEFAULT_MODULE = "Retriever"                                                                                  
+func main() {
 
-const (
-    LevelError = logLevel(iota)
-    LevelWarn
-    LevelInfo
-    LevelDebug
-)
+        // create new instance of logger
+        rl, err := logger.NewLogger(DEFAULT_MODULE, logger.LevelInfo)                                                   if err != nil {
+                fmt.Sprintf("Cannot intialize logger %s", err.Error())                                 
+        }
+        // set logging to file
+        rl.SetFile("Retriever.log")
+        // enable keys
+        rl.EnableKeys([]string{DEFAULT_MODULE, "Logger", "Stats"}) 
+        // Log Info message
+        rl.LogInfo("", DEFAULT_MODULE, "Retriever Server started")
 
-const (
-    Default logDevice = iota << 1 // log to stdout
-    File                          // user specified file name
-    Remote                        // remote host
-)
-
-const DEFAULT_PATH = "/tmp"
-
-const MAX_CLEANUP_COUNTER = 1000
-
-
-TYPES
-
-type LogWriter struct {
-    // contains filtered or unexported fields
+        ....
 }
-
-
-func NewLogger(module string, level logLevel) (*LogWriter, error)
-    Create a new instance of a logWriter
-
-
-func (lw *LogWriter) DisableKeys(keys []string) error
-    disable component keys
-
-func (lw *LogWriter) DisableTransactionLogging()
-    Disable logging to a transaction file
-
-func (lw *LogWriter) EnableKeys(keys []string) error
-    enable component keys
-
-func (lw *LogWriter) EnableTransactionLogging()
-    Set the logging to the log to a transaction file
-
-func (lw *LogWriter) LogDebug(transactionId string, key string, format string, args ...interface{})
-    log debug. transaction id, component id, log message
-
-func (lw *LogWriter) LogError(transactionId string, key string, format string, args ...interface{})
-    log error transaction id, component id, log message
-
-func (lw *LogWriter) LogInfo(transactionId string, key string, format string, args ...interface{})
-    log info. transaction id, component id, log message
-
-func (lw *LogWriter) LogWarn(transactionId string, key string, format string, args ...interface{})
-    log warning transaction id, component id, log message
-
-func (lw *LogWriter) SetFile(path string) error
-    Set the output device
-
-func (lw *LogWriter) SetLogHost(string) error
-    Set the remote host
-
-func (lw *LogWriter) SetLogLevel(level logLevel) error
-    Set the log level
-
-
-type TransactionLogger struct {
-    // contains filtered or unexported fields
-}
-
-
-
-
