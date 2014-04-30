@@ -41,7 +41,8 @@ func handleConnections(lw *LogWriter, module string) {
 		nr, err := c.Read(buf)
 		if err != nil {
 			fmt.Printf(" Could not read from buffer %s", err.Error())
-			return
+			c.Close()
+			continue
 		}
 		data := string(buf[0:nr])
 		cmds := strings.Split(data, ":")

@@ -5,16 +5,18 @@ Usage:
 
 package main
 
-import (
-        "github.com/couchbaselabs/retriever/logger"d
-)                                                                                                                   
 
+'''
+import (
+        "github.com/couchbaselabs/retriever/logger"
+)                                                                                                                   
 var rl logger.LogWriter
 const DEFAULT_MODULE = "Retriever"                                                                                  
 func main() {
 
         // create new instance of logger
-        rl, err := logger.NewLogger(DEFAULT_MODULE, logger.LevelInfo)                                                   if err != nil {
+        rl, err := logger.NewLogger(DEFAULT_MODULE, logger.LevelInfo)
+        if err != nil {
                 fmt.Sprintf("Cannot intialize logger %s", err.Error())                                 
         }
         // set logging to file
@@ -26,3 +28,4 @@ func main() {
 
         ....
 }
+'''

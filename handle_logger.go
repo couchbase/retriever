@@ -46,21 +46,22 @@ func HandleLoggerCmds(w http.ResponseWriter, r *http.Request) {
 	if strings.ToLower(module) == "all" {
 		var pattern string
 		switch msg.Cmd {
-		case "Log":
+		case "log":
 			pattern = DEFAULT_PATH + "/*.log.*"
 			scanLogs(w, pattern)
-		case "TransactionLog":
+		case "transactionLog":
 			pattern = DEFAULT_PATH + "/trans_*.log"
 			scanLogs(w, pattern)
-		case "Level":
-			requestStr := "Level:" + msg.Message
+		case "level":
+			requestStr := "level:" + msg.Message
 			pattern = DEFAULT_PATH + "/*.sock"
 			sendCmdAll(w, requestStr, pattern)
-		case "Rotate":
-			requestStr := "Rotate:"
+		case "rotate":
+			requestStr := "rotate:"
 			pattern = DEFAULT_PATH + "/*.sock"
 			sendCmdAll(w, requestStr, pattern)
-
+		default:
+			http.Error(w, "Invalid Command", http.StatusInternalServerError)
 		}
 
 		return
@@ -70,24 +71,28 @@ func HandleLoggerCmds(w http.ResponseWriter, r *http.Request) {
 	stream := false
 
 	switch msg.Cmd {
-	case "Level":
-		requestStr = "Level:" + msg.Message
-	case "Transaction":
-		requestStr = "Transaction:" + msg.Message
-	case "TransactionLog":
+	case "level":
+		requestStr = "level:" + msg.Message
+	case "transaction":
+		requestStr = "transaction:" + msg.Message
+	case "transactionLog":
 		if msg.Message == "" {
 			http.Error(w, "Missing transaction Id", http.StatusInternalServerError)
 			return
 		}
 		requestStr = "trans_" + msg.Message + ".log"
 		stream = true
-	case "Log":
+	case "log":
 		requestStr = module + ".log"
 		stream = true
-	case "Loglist":
-		requestStr = "Loglist:"
-	case "Rotate":
-		requestStr = "Rotate:"
+	case "loglist":
+		requestStr = "loglist:"
+	case "rotate":
+		requestStr = "rotate:"
+	default:
+		http.Error(w, "Invalid Command", http.StatusInternalServerError)
+		return
+
 	}
 
 	if stream == false {

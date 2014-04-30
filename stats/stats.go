@@ -184,7 +184,11 @@ func (sc *StatsCollector) DecrementStat(key string) error {
 func (sc *StatsCollector) GetStat(key string) interface{} {
 	sc.mu.RLock()
 	defer sc.mu.RUnlock()
-	return sc.Stats[key]
+	value, ok := sc.Stats[key]
+	if !ok {
+		return nil
+	}
+	return value
 }
 
 func (sc *StatsCollector) GetAllStat() string {
@@ -251,7 +255,8 @@ func handleConnections(sc *StatsCollector) {
 		nr, err := c.Read(buf)
 		if err != nil {
 			fmt.Printf(" Could not read from buffer %s", err.Error())
-			return
+			c.Close()
+			continue
 		}
 		data := string(buf[0:nr])
 		cmds := strings.Split(data, ":")

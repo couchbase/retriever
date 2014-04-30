@@ -25,7 +25,8 @@ const LOGGER = "Logger"
 func main() {
 
 	r := mux.NewRouter()
-	r.HandleFunc("/logger/{module}", HandleLoggerCmds).Methods("PUT", "POST")
+	r.HandleFunc("/logger/{module}", HandleLoggerCmds).Methods("GET", "PUT", "POST")
+	r.HandleFunc("/stats/{module}", HandleStatsCmds).Methods("GET", "PUT", "POST")
 	http.Handle("/", r)
 
 	rl, err := logger.NewLogger(DEFAULT, logger.LevelInfo)

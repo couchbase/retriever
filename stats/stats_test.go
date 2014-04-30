@@ -12,6 +12,7 @@ package stats
 import (
 	"fmt"
 	"testing"
+	"time"
 )
 
 func TestStats(t *testing.T) {
@@ -78,5 +79,7 @@ func TestStats(t *testing.T) {
 	//get all stats
 	stats := sc.GetAllStat()
 	fmt.Printf(" Stats : %s", stats)
+
+	time.Sleep(500 * time.Second)
 
 }
