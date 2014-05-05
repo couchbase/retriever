@@ -2,11 +2,8 @@ This package exports logging APIs that can be used to log to a file or a remote 
 See the package documentation at [GoDoc] http://godoc.org/github.com/couchbaselabs/retriever/logger
 
 Usage:
-
-package main
-
-
 '''
+package main
 import (
         "github.com/couchbaselabs/retriever/logger"
 )                                                                                                                   

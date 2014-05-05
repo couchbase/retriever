@@ -60,6 +60,14 @@ func HandleLoggerCmds(w http.ResponseWriter, r *http.Request) {
 			requestStr := "rotate:"
 			pattern = DEFAULT_PATH + "/*.sock"
 			sendCmdAll(w, requestStr, pattern)
+		case "transEnable":
+			requestStr := "trans"
+			pattern = DEFAULT_PATH + "/*.sock"
+			sendCmdAll(w, requestStr, pattern)
+		case "transDisable":
+			requestStr := "transoff"
+			pattern = DEFAULT_PATH + "/*.sock"
+			sendCmdAll(w, requestStr, pattern)
 		default:
 			http.Error(w, "Invalid Command", http.StatusInternalServerError)
 		}
@@ -89,6 +97,10 @@ func HandleLoggerCmds(w http.ResponseWriter, r *http.Request) {
 		requestStr = "loglist:"
 	case "rotate":
 		requestStr = "rotate:"
+	case "transEnable":
+		requestStr = "trans"
+	case "transDisable":
+		requestStr = "transoff"
 	default:
 		http.Error(w, "Invalid Command", http.StatusInternalServerError)
 		return

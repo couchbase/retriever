@@ -11,6 +11,7 @@ package logger
 
 import (
 	"fmt"
+	"github.com/couchbaselabs/retriever/lockfile"
 	"log"
 	"os"
 	"sync"
@@ -21,6 +22,7 @@ type logLevel int
 
 const DEFAULT_PATH = "/tmp"
 const MAX_CLEANUP_COUNTER = 1000
+const MAX_LOCK_RETRY = 10
 
 const (
 	LevelError = logLevel(iota)
@@ -38,9 +40,10 @@ const (
 )
 
 type TransactionLogger struct {
-	file    *os.File
-	logger  *log.Logger
-	counter uint64
+	file     *os.File
+	logger   *log.Logger
+	counter  uint64
+	fileLock lockfile.Lockfile // file lock used for transaction logging
 }
 
 type LogWriter struct {
@@ -190,7 +193,9 @@ func (lw *LogWriter) logTransaction(transactionId string, logString string) bool
 			return false
 		}
 		logger = log.New(file, "", log.Lmicroseconds)
-		tl := &TransactionLogger{file: file, logger: logger, counter: lw.logCounter}
+		fileLockPath := DEFAULT_PATH + "/" + "trans_" + transactionId + ".lock"
+		fl, _ := lockfile.New(fileLockPath)
+		tl = &TransactionLogger{file: file, logger: logger, counter: lw.logCounter, fileLock: fl}
 		lw.transMu.Lock()
 		lw.transFileMap[transactionId] = tl
 		lw.transMu.Unlock()
@@ -203,8 +208,27 @@ func (lw *LogWriter) logTransaction(transactionId string, logString string) bool
 		tl.(*TransactionLogger).counter = lw.logCounter
 	}
 
+	var locked bool
+	err := tl.(*TransactionLogger).fileLock.TryLock()
+	if err != nil {
+		// busy wait a few times before giving up
+		for i := 0; i < MAX_LOCK_RETRY; i++ {
+			time.Sleep(10 * time.Millisecond)
+			err = tl.(*TransactionLogger).fileLock.TryLock()
+			if err == nil {
+				locked = true
+				break
+			}
+		}
+		// unable to acquire lock
+		if locked == false {
+			return false
+		}
+	}
+	defer tl.(*TransactionLogger).fileLock.Unlock()
+
 	logger.Print(logString)
-	return false
+	return true
 }
 
 //cleanup transaction filemap

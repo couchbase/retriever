@@ -2,9 +2,7 @@ Stats collection API.
 
 Example usage
 '''
-
 package test
-
 import (
     "github.com/couchbaselabs/retreiver/stats"
 )
@@ -25,5 +23,4 @@ func main() {
     fmt.Printf(" All stats %v", sc.GetAllStat())
 
 }
-
-"""
+'''

@@ -35,7 +35,8 @@ func handleConnections(lw *LogWriter, module string) {
 	for {
 		c, err := listener.Accept()
 		if err != nil {
-			panic("Unable to accept " + err.Error()) // FIXME
+			fmt.Printf("Unable to accept " + err.Error()) // FIXME
+			continue
 		}
 		buf := make([]byte, 512)
 		nr, err := c.Read(buf)
@@ -60,6 +61,12 @@ func handleConnections(lw *LogWriter, module string) {
 			} else {
 				c.Write([]byte("OK"))
 			}
+		case strings.Contains(strings.ToLower(cmds[0]), "trans"):
+			lw.EnableTransactionLogging()
+			c.Write([]byte("OK"))
+		case strings.Contains(strings.ToLower(cmds[0]), "transoff"):
+			lw.DisableTransactionLogging()
+			c.Write([]byte("OK"))
 		}
 		c.Close()
 	}

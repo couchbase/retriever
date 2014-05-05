@@ -12,7 +12,6 @@ package stats
 import (
 	"fmt"
 	"testing"
-	"time"
 )
 
 func TestStats(t *testing.T) {
@@ -71,7 +70,10 @@ func TestStats(t *testing.T) {
 	}
 
 	// get stats
-	fmt.Println("Connections ", sc.GetStat("Connections"))
+
+	connections := sc.GetStat("Connections").(uint16) + 1
+
+	fmt.Println("Connections ", connections)
 	fmt.Println("Failures ", sc.GetStat("Failures"))
 	fmt.Println("RTT ", sc.GetStat("RTT"))
 	fmt.Println("Transport ", sc.GetStat("Transport"))
@@ -79,7 +81,5 @@ func TestStats(t *testing.T) {
 	//get all stats
 	stats := sc.GetAllStat()
 	fmt.Printf(" Stats : %s", stats)
-
-	time.Sleep(500 * time.Second)
 
 }

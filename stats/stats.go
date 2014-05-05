@@ -220,7 +220,7 @@ func (sc *StatsCollector) GetAllStat() string {
 		GcNum:  mem.NumGC,
 	}
 
-	jsonBytes, jsonErr := json.Marshal(sc)
+	jsonBytes, jsonErr := json.MarshalIndent(sc, "", "    ")
 	var body string
 	if jsonErr != nil {
 		body = jsonErr.Error()
@@ -249,7 +249,8 @@ func handleConnections(sc *StatsCollector) {
 	for {
 		c, err := listener.Accept()
 		if err != nil {
-			panic("Unable to accept " + err.Error()) // FIXME
+			fmt.Printf("Unable to accept " + err.Error())
+			continue
 		}
 		buf := make([]byte, 512)
 		nr, err := c.Read(buf)
