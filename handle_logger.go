@@ -47,10 +47,10 @@ func HandleLoggerCmds(w http.ResponseWriter, r *http.Request) {
 		var pattern string
 		switch msg.Cmd {
 		case "log":
-			pattern = DEFAULT_PATH + "/*.log.*"
+			pattern = DEFAULT_PATH + "/*.log*"
 			scanLogs(w, pattern)
 		case "transactionLog":
-			pattern = DEFAULT_PATH + "/trans_*.log"
+			pattern = DEFAULT_PATH + "/trans_" + msg.Message + ".log"
 			scanLogs(w, pattern)
 		case "level":
 			requestStr := "level:" + msg.Message
@@ -61,11 +61,19 @@ func HandleLoggerCmds(w http.ResponseWriter, r *http.Request) {
 			pattern = DEFAULT_PATH + "/*.sock"
 			sendCmdAll(w, requestStr, pattern)
 		case "transEnable":
-			requestStr := "trans"
+			requestStr := "trans:"
 			pattern = DEFAULT_PATH + "/*.sock"
 			sendCmdAll(w, requestStr, pattern)
 		case "transDisable":
-			requestStr := "transoff"
+			requestStr := "transoff:"
+			pattern = DEFAULT_PATH + "/*.sock"
+			sendCmdAll(w, requestStr, pattern)
+		case "alarmSet":
+			requestStr := "alarm:" + msg.Message
+			pattern = DEFAULT_PATH + "/*.sock"
+			sendCmdAll(w, requestStr, pattern)
+		case "alarmClear":
+			requestStr := "alarmoff:"
 			pattern = DEFAULT_PATH + "/*.sock"
 			sendCmdAll(w, requestStr, pattern)
 		default:
@@ -98,9 +106,13 @@ func HandleLoggerCmds(w http.ResponseWriter, r *http.Request) {
 	case "rotate":
 		requestStr = "rotate:"
 	case "transEnable":
-		requestStr = "trans"
+		requestStr = "trans:"
 	case "transDisable":
-		requestStr = "transoff"
+		requestStr = "transoff:"
+	case "alarmSet":
+		requestStr = "alarm:" + msg.Message
+	case "alarmClear":
+		requestStr = "alarmoff:"
 	default:
 		http.Error(w, "Invalid Command", http.StatusInternalServerError)
 		return

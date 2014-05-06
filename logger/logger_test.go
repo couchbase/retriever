@@ -54,15 +54,15 @@ func TestLogger(t *testing.T) {
 	mylog.DisableTransactionLogging()
 	mylog.LogError(transId, "test1", "goes back to the file")
 
-	i := 0
-	for i < 500 {
-		mylog.LogError(transId, "test1", "Error log")
+	for i := 0; i < 5; i++ {
+		mylog.RegisterAlarm("http://localhost:9111/alarm/")
+		mylog.LogError(transId, "test1", "----Big time error---")
 		mylog.LogInfo(transId, "test1", "Info log")
 		mylog.LogWarn(transId, "test1", "Warning log")
 		mylog.LogDebug(transId, "test1", "Debug log")
+		mylog.ClearAlarm()
 
 		time.Sleep(1 * time.Second)
-
 	}
 
 }

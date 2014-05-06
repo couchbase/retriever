@@ -46,7 +46,7 @@ func handleConnections(lw *LogWriter, module string) {
 			continue
 		}
 		data := string(buf[0:nr])
-		cmds := strings.Split(data, ":")
+		cmds := strings.SplitN(data, ":", 2)
 		switch {
 		case strings.Contains(strings.ToLower(cmds[0]), "level"):
 			setLevel(lw, cmds[1])
@@ -68,6 +68,13 @@ func handleConnections(lw *LogWriter, module string) {
 		case strings.Contains(strings.ToLower(cmds[0]), "trans"):
 			lw.EnableTransactionLogging()
 			c.Write([]byte("OK"))
+		case strings.Contains(strings.ToLower(cmds[0]), "alarmoff"):
+			lw.ClearAlarm()
+			c.Write([]byte("OK"))
+		case strings.Contains(strings.ToLower(cmds[0]), "alarm"):
+			lw.RegisterAlarm(cmds[1])
+			c.Write([]byte("OK"))
+
 		}
 		c.Close()
 	}

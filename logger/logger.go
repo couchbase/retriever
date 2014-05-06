@@ -10,9 +10,13 @@
 package logger
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"github.com/couchbaselabs/retriever/lockfile"
+	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"sync"
 	"time"
@@ -21,7 +25,7 @@ import (
 type logLevel int
 
 const DEFAULT_PATH = "/tmp"
-const MAX_CLEANUP_COUNTER = 1000
+const MAX_CLEANUP_COUNTER = 300
 const MAX_LOCK_RETRY = 10
 
 const (
@@ -46,6 +50,13 @@ type TransactionLogger struct {
 	fileLock lockfile.Lockfile // file lock used for transaction logging
 }
 
+type AlarmMessage struct {
+	Module      string
+	Transaction string
+	Key         string
+	Message     string
+}
+
 type LogWriter struct {
 	module         string                 // name of logging module
 	level          logLevel               // current log leve
@@ -59,6 +70,14 @@ type LogWriter struct {
 	cleanerRunning bool                   // transaction log cleaner process
 	logCounter     uint64                 // count of log messages
 	file           *os.File               // file handle of log file
+	alarmEnabled   bool                   // endpoint alarms enabled
+	alarmLogger    AlarmLogger            // instance of alarm logger
+}
+
+type AlarmLogger struct {
+	endpoint string            // address of alarm endpoint
+	cMsg     chan AlarmMessage // channel used to communicate messages to remote server
+	cStop    chan bool         // stop channel
 }
 
 // Create a new instance of a logWriter
@@ -322,6 +341,49 @@ func (lw *LogWriter) LogError(transactionId string, key string, format string, a
 		}
 		if lw.keyEnabled(key) {
 			lw.logMessage(transactionId, key, format, args...)
+		}
+		if lw.alarmEnabled == true {
+			// send alarm to remote host
+			message := fmt.Sprintf(format, args...)
+			lw.alarmLogger.cMsg <- AlarmMessage{Module: lw.module, Key: key, Transaction: transactionId, Message: message}
+		}
+	}
+}
+
+// register alarm endpoint. Any error log will be sent to this remote endpoint
+func (lw *LogWriter) RegisterAlarm(endpoint string) error {
+
+	if lw.alarmEnabled == false {
+		lw.alarmLogger = AlarmLogger{endpoint: endpoint, cMsg: make(chan AlarmMessage), cStop: make(chan bool)}
+		lw.alarmEnabled = true
+		go sendAlarm(endpoint, lw.alarmLogger.cMsg, lw.alarmLogger.cStop)
+	}
+	return nil
+}
+
+func (lw *LogWriter) ClearAlarm() {
+	lw.alarmEnabled = false
+	lw.alarmLogger.cStop <- true
+}
+
+func sendAlarm(endpoint string, cMsg chan AlarmMessage, cStop chan bool) {
+
+	client := &http.Client{}
+	ok := true
+	for ok {
+		select {
+		case msg := <-cMsg:
+			reqBody, _ := json.Marshal(msg)
+			r, _ := http.NewRequest("POST", endpoint, bytes.NewBufferString(string(reqBody)))
+			resp, err := client.Do(r)
+			if err != nil {
+				fmt.Printf("Logger Error sending request to endpoint %s", err.Error())
+				continue
+			}
+			ioutil.ReadAll(resp.Body)
+			resp.Body.Close()
+		case <-cStop:
+			ok = false
 		}
 	}
 }

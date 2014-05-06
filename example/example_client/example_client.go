@@ -23,13 +23,6 @@ const (
 	RESPONSE_UNKNOWN_ERROR
 )
 
-const (
-	CMD_HELLO = iota
-	CMD_STATS
-	CMD_DATA
-	CMD_RESTART
-)
-
 type Command struct {
 	TransactionId int
 	Cmd           int
@@ -61,6 +54,10 @@ func do_requests(clientId int, uri string) {
 		sc.IncrementStat(STAT_REQUESTS)
 		command.TransactionId = (clientId * 1000000) + i
 		command.Cmd = i % 4
+		if i%50 == 0 {
+			// 1 out of 50 transactions generates an error
+			command.Cmd = 5
+		}
 		command.Message = "Client Id " + string(clientId)
 		reqBody, err := json.Marshal(command)
 		transactionId := fmt.Sprintf("%d", command.TransactionId)
@@ -84,6 +81,11 @@ func do_requests(clientId int, uri string) {
 			lw.LogError(transactionId, EC, "Cannot read response %s", err.Error())
 			sc.IncrementStat(STAT_FAILURES)
 			continue
+		}
+		resp.Body.Close()
+		if response.ResponseCode != RESPONSE_OK {
+			lw.LogError(transactionId, EC, "Server returned an error. Code %d", response.ResponseCode)
+			sc.IncrementStat(STAT_FAILURES)
 		}
 		lw.LogDebug(transactionId, EC, "Received response from server %s", response.Message)
 		sc.UpdateStat(STAT_BYTESRECEIVED, sc.GetStat(STAT_BYTESTRANS).(int)+len(respBody))

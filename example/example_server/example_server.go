@@ -74,6 +74,7 @@ func cmdHandler(w http.ResponseWriter, r *http.Request) {
 		lw.LogError("", ES, "Unable to decode message from client")
 		sc.IncrementStat("Failures")
 		http.Error(w, "Unable to decode message", http.StatusInternalServerError)
+		return
 	}
 
 	transactionId := fmt.Sprintf("%d", command.TransactionId)
