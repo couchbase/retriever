@@ -85,7 +85,7 @@ func do_requests(clientId int, uri string) {
 			sc.IncrementStat(STAT_FAILURES)
 			continue
 		}
-		lw.LogDebug(transactionId, "EC", "Received response from server %s", response.Message)
+		lw.LogDebug(transactionId, EC, "Received response from server %s", response.Message)
 		sc.UpdateStat(STAT_BYTESRECEIVED, sc.GetStat(STAT_BYTESTRANS).(int)+len(respBody))
 		time.Sleep(300 * time.Millisecond)
 	}

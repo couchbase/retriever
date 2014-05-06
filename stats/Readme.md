@@ -2,14 +2,9 @@ Stats collection API.
 
 Example usage
 '''
-package test
-import (
-    "github.com/couchbaselabs/retreiver/stats"
-)
-
-const NUM_CONNECTIONS "num_connections"
-
 func main() {
+
+    const NUM_CONNECTIONS "num_connections"
 
     sc := stats.NewStatsCollector("test")
     sc.AddStatKey(NUM_CONNECTIONS, 0) 

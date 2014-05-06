@@ -2,15 +2,12 @@ This package exports logging APIs that can be used to log to a file or a remote 
 See the package documentation at [GoDoc] http://godoc.org/github.com/couchbaselabs/retriever/logger
 
 Usage:
+
 '''
-package main
-import (
-        "github.com/couchbaselabs/retriever/logger"
-)                                                                                                                   
-var rl logger.LogWriter
-const DEFAULT_MODULE = "Retriever"                                                                                  
 func main() {
 
+        var rl logger.LogWriter
+        const DEFAULT_MODULE = "Retriever"   
         // create new instance of logger
         rl, err := logger.NewLogger(DEFAULT_MODULE, logger.LevelInfo)
         if err != nil {

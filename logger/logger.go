@@ -253,7 +253,7 @@ func cleanupMap(lw *LogWriter) {
 				}
 			}
 		} else {
-			if lw.transMode == false {
+			if lw.transMode == false && len(lw.transFileMap) == 0 {
 				lw.cleanerRunning = false
 				return
 			}

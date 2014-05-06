@@ -79,7 +79,7 @@ func cmdHandler(w http.ResponseWriter, r *http.Request) {
 	transactionId := fmt.Sprintf("%d", command.TransactionId)
 	bytesRecvd := sc.GetStat("bytesReceived").(int)
 	sc.UpdateStat("bytesReceived", bytesRecvd+int(r.ContentLength))
-	lw.LogDebug(transactionId, ES, "Received command %s message %s", command.Cmd, command.Message)
+	lw.LogDebug(transactionId, ES, "Received command %d message %s", command.Cmd, command.Message)
 
 	response.TransactionId = command.TransactionId
 	response.ResponseCode = RESPONSE_OK
@@ -101,7 +101,7 @@ func cmdHandler(w http.ResponseWriter, r *http.Request) {
 		lw.LogError(transactionId, ES, "Invalid command code %d", command.Cmd)
 	}
 
-	lw.LogDebug(transactionId, ES, "Response message %s message %s", response.ResponseCode, response.ResponseCode)
+	lw.LogDebug(transactionId, ES, "Response message %d message %s", response.ResponseCode, response.Message)
 
 	respBody, err := json.Marshal(response)
 	sc.UpdateStat("bytesSent", sc.GetStat("bytesSent").(int)+len(respBody))
