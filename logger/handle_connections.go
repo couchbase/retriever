@@ -61,12 +61,12 @@ func handleConnections(lw *LogWriter, module string) {
 			} else {
 				c.Write([]byte("OK"))
 			}
-		case strings.Contains(strings.ToLower(cmds[0]), "transoff"):
-			lw.DisableTransactionLogging()
+		case strings.Contains(strings.ToLower(cmds[0]), "traceoff"):
+			lw.DisableTraceLogging()
 			c.Write([]byte("OK"))
 
-		case strings.Contains(strings.ToLower(cmds[0]), "trans"):
-			lw.EnableTransactionLogging()
+		case strings.Contains(strings.ToLower(cmds[0]), "trace"):
+			lw.EnableTraceLogging()
 			c.Write([]byte("OK"))
 		case strings.Contains(strings.ToLower(cmds[0]), "alarmoff"):
 			lw.ClearAlarm()

@@ -43,18 +43,18 @@ const (
 	Remote                        // remote host
 )
 
-type TransactionLogger struct {
+type TraceLogger struct {
 	file     *os.File
 	logger   *log.Logger
 	counter  uint64
-	fileLock lockfile.Lockfile // file lock used for transaction logging
+	fileLock lockfile.Lockfile // file lock used for trace logging
 }
 
 type AlarmMessage struct {
-	Module      string
-	Transaction string
-	Key         string
-	Message     string
+	Module  string
+	TraceId string
+	Key     string
+	Message string
 }
 
 type LogWriter struct {
@@ -64,10 +64,10 @@ type LogWriter struct {
 	mu             sync.Mutex             // mutex for this structure
 	logger         *log.Logger            // instance of logger module
 	filePath       string                 // path of log file for this module
-	transFileMap   map[string]interface{} // table of transaction logs - transaction id
-	transMu        sync.RWMutex           // R/W mutex to sync access to the above structure
-	transMode      bool                   // transaction mode enabled
-	cleanerRunning bool                   // transaction log cleaner process
+	traceFileMap   map[string]interface{} // table of trace logs - trace id
+	traceMu        sync.RWMutex           // R/W mutex to sync access to the above structure
+	traceMode      bool                   // trace mode enabled
+	cleanerRunning bool                   // trace log cleaner process
 	logCounter     uint64                 // count of log messages
 	file           *os.File               // file handle of log file
 	alarmEnabled   bool                   // endpoint alarms enabled
@@ -96,7 +96,7 @@ func NewLogger(module string, level logLevel) (*LogWriter, error) {
 		level:        level,
 		keyList:      make(map[string]bool),
 		logger:       log.New(os.Stderr, "", log.Lmicroseconds),
-		transFileMap: make(map[string]interface{}),
+		traceFileMap: make(map[string]interface{}),
 	}
 
 	lw.keyList["Default"] = true
@@ -153,18 +153,18 @@ func (lw *LogWriter) Rotate() error {
 	return nil
 }
 
-// Set the logging to the log to a transaction file
-func (lw *LogWriter) EnableTransactionLogging() {
-	lw.transMode = true
+// Set the logging to the log to a trace file
+func (lw *LogWriter) EnableTraceLogging() {
+	lw.traceMode = true
 	if lw.cleanerRunning == false {
 		go cleanupMap(lw)
 		lw.cleanerRunning = true
 	}
 }
 
-// Disable logging to a transaction file
-func (lw *LogWriter) DisableTransactionLogging() {
-	lw.transMode = false
+// Disable logging to a trace file
+func (lw *LogWriter) DisableTraceLogging() {
+	lw.traceMode = false
 }
 
 // Set the remote host
@@ -199,41 +199,41 @@ func (lw *LogWriter) keyEnabled(key string) bool {
 	return found
 }
 
-func (lw *LogWriter) logTransaction(transactionId string, logString string) bool {
+func (lw *LogWriter) logTrace(traceId string, logString string) bool {
 	var logger *log.Logger
-	lw.transMu.RLock()
-	tl := lw.transFileMap[transactionId]
-	lw.transMu.RUnlock()
+	lw.traceMu.RLock()
+	tl := lw.traceFileMap[traceId]
+	lw.traceMu.RUnlock()
 	if tl == nil {
-		filePath := DEFAULT_PATH + "/" + "trans_" + transactionId + ".log"
+		filePath := DEFAULT_PATH + "/" + "trace_" + traceId + ".log"
 		file, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 		if err != nil {
-			lw.logger.Print("Logger: Unable to create transaction file %s, Error %s", filePath, err.Error())
+			lw.logger.Print("Logger: Unable to create trace file %s, Error %s", filePath, err.Error())
 			return false
 		}
 		logger = log.New(file, "", log.Lmicroseconds)
-		fileLockPath := DEFAULT_PATH + "/" + "trans_" + transactionId + ".lock"
+		fileLockPath := DEFAULT_PATH + "/" + "trace_" + traceId + ".lock"
 		fl, _ := lockfile.New(fileLockPath)
-		tl = &TransactionLogger{file: file, logger: logger, counter: lw.logCounter, fileLock: fl}
-		lw.transMu.Lock()
-		lw.transFileMap[transactionId] = tl
-		lw.transMu.Unlock()
+		tl = &TraceLogger{file: file, logger: logger, counter: lw.logCounter, fileLock: fl}
+		lw.traceMu.Lock()
+		lw.traceFileMap[traceId] = tl
+		lw.traceMu.Unlock()
 		if lw.cleanerRunning == false {
 			// restart the cleaner
 			go cleanupMap(lw)
 		}
 	} else {
-		logger = tl.(*TransactionLogger).logger
-		tl.(*TransactionLogger).counter = lw.logCounter
+		logger = tl.(*TraceLogger).logger
+		tl.(*TraceLogger).counter = lw.logCounter
 	}
 
 	var locked bool
-	err := tl.(*TransactionLogger).fileLock.TryLock()
+	err := tl.(*TraceLogger).fileLock.TryLock()
 	if err != nil {
 		// busy wait a few times before giving up
 		for i := 0; i < MAX_LOCK_RETRY; i++ {
 			time.Sleep(10 * time.Millisecond)
-			err = tl.(*TransactionLogger).fileLock.TryLock()
+			err = tl.(*TraceLogger).fileLock.TryLock()
 			if err == nil {
 				locked = true
 				break
@@ -244,13 +244,13 @@ func (lw *LogWriter) logTransaction(transactionId string, logString string) bool
 			return false
 		}
 	}
-	defer tl.(*TransactionLogger).fileLock.Unlock()
+	defer tl.(*TraceLogger).fileLock.Unlock()
 
 	logger.Print(logString)
 	return true
 }
 
-//cleanup transaction filemap
+//cleanup trace filemap
 func cleanupMap(lw *LogWriter) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -260,19 +260,19 @@ func cleanupMap(lw *LogWriter) {
 	}()
 
 	for {
-		if len(lw.transFileMap) > 0 {
-			for key, _ := range lw.transFileMap {
-				tl := lw.transFileMap[key].(*TransactionLogger)
+		if len(lw.traceFileMap) > 0 {
+			for key, _ := range lw.traceFileMap {
+				tl := lw.traceFileMap[key].(*TraceLogger)
 				if lw.logCounter-tl.counter >= MAX_CLEANUP_COUNTER {
 					fmt.Println("Closing File ", tl.file.Name())
 					tl.file.Close()
-					lw.transMu.Lock()
-					delete(lw.transFileMap, key)
-					lw.transMu.Unlock()
+					lw.traceMu.Lock()
+					delete(lw.traceFileMap, key)
+					lw.traceMu.Unlock()
 				}
 			}
 		} else {
-			if lw.transMode == false && len(lw.transFileMap) == 0 {
+			if lw.traceMode == false && len(lw.traceFileMap) == 0 {
 				lw.cleanerRunning = false
 				return
 			}
@@ -281,71 +281,71 @@ func cleanupMap(lw *LogWriter) {
 	}
 }
 
-func (lw *LogWriter) logMessage(transactionId string, key string, format string, args ...interface{}) {
+func (lw *LogWriter) logMessage(traceId string, key string, format string, args ...interface{}) {
 	var logString string
 	lw.logCounter++
-	if transactionId != "" {
-		logString = fmt.Sprintf("%s %s %s", key, transactionId, fmt.Sprintf(format, args...))
+	if traceId != "" {
+		logString = fmt.Sprintf("%s %s %s", key, traceId, fmt.Sprintf(format, args...))
 	} else {
 		logString = fmt.Sprintf("%s None %s", key, fmt.Sprintf(format, args...))
 	}
-	if lw.transMode == true && len(transactionId) > 0 {
-		if lw.logTransaction(transactionId, logString) {
+	if lw.traceMode == true && len(traceId) > 0 {
+		if lw.logTrace(traceId, logString) {
 			return
 		}
 	}
 	lw.logger.Print(logString)
 }
 
-// log debug. transaction id, component id, log message
-func (lw *LogWriter) LogDebug(transactionId string, key string, format string, args ...interface{}) {
+// log debug. trace id, component id, log message
+func (lw *LogWriter) LogDebug(traceId string, key string, format string, args ...interface{}) {
 	if lw.level >= LevelDebug {
 		if key == "" {
 			key = "Default"
 		}
 		if lw.keyEnabled(key) {
-			lw.logMessage(transactionId, key, format, args...)
+			lw.logMessage(traceId, key, format, args...)
 		}
 	}
 }
 
-//log info. transaction id, component id, log message
-func (lw *LogWriter) LogInfo(transactionId string, key string, format string, args ...interface{}) {
+//log info. trace id, component id, log message
+func (lw *LogWriter) LogInfo(traceId string, key string, format string, args ...interface{}) {
 	if lw.level >= LevelInfo {
 		if key == "" {
 			key = "Default"
 		}
 		if lw.keyEnabled(key) {
-			lw.logMessage(transactionId, key, format, args...)
+			lw.logMessage(traceId, key, format, args...)
 		}
 	}
 }
 
-//log warning transaction id, component id, log message
-func (lw *LogWriter) LogWarn(transactionId string, key string, format string, args ...interface{}) {
+//log warning trace id, component id, log message
+func (lw *LogWriter) LogWarn(traceId string, key string, format string, args ...interface{}) {
 	if lw.level >= LevelWarn {
 		if key == "" {
 			key = "Default"
 		}
 		if lw.keyEnabled(key) {
-			lw.logMessage(transactionId, key, format, args...)
+			lw.logMessage(traceId, key, format, args...)
 		}
 	}
 }
 
-//log error transaction id, component id, log message
-func (lw *LogWriter) LogError(transactionId string, key string, format string, args ...interface{}) {
+//log error trace id, component id, log message
+func (lw *LogWriter) LogError(traceId string, key string, format string, args ...interface{}) {
 	if lw.level >= LevelError {
 		if key == "" {
 			key = "Default"
 		}
 		if lw.keyEnabled(key) {
-			lw.logMessage(transactionId, key, format, args...)
+			lw.logMessage(traceId, key, format, args...)
 		}
 		if lw.alarmEnabled == true {
 			// send alarm to remote host
 			message := fmt.Sprintf(format, args...)
-			lw.alarmLogger.cMsg <- AlarmMessage{Module: lw.module, Key: key, Transaction: transactionId, Message: message}
+			lw.alarmLogger.cMsg <- AlarmMessage{Module: lw.module, Key: key, TraceId: traceId, Message: message}
 		}
 	}
 }

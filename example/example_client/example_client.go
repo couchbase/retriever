@@ -55,21 +55,21 @@ func do_requests(clientId int, uri string) {
 		command.TransactionId = (clientId * 1000000) + i
 		command.Cmd = i % 4
 		if i%50 == 0 {
-			// 1 out of 50 transactions generates an error
+			// 1 out of 50 traces generates an error
 			command.Cmd = 5
 		}
 		command.Message = "Client Id " + string(clientId)
 		reqBody, err := json.Marshal(command)
-		transactionId := fmt.Sprintf("%d", command.TransactionId)
+		traceId := fmt.Sprintf("%d", command.TransactionId)
 		if err != nil {
-			lw.LogError(transactionId, EC, "Error marshalling %s", err.Error())
+			lw.LogError(traceId, EC, "Error marshalling %s", err.Error())
 		}
-		lw.LogDebug(transactionId, EC, "Sending command %d", command.Cmd)
+		lw.LogDebug(traceId, EC, "Sending command %d", command.Cmd)
 
 		r, err := http.NewRequest("POST", uri, bytes.NewBufferString(string(reqBody)))
 		resp, err := client.Do(r)
 		if err != nil {
-			lw.LogError(transactionId, EC, "Error sending HTTP request %s", err.Error())
+			lw.LogError(traceId, EC, "Error sending HTTP request %s", err.Error())
 			sc.IncrementStat(STAT_FAILURES)
 			continue
 		}
@@ -78,16 +78,16 @@ func do_requests(clientId int, uri string) {
 
 		respBody, _ := ioutil.ReadAll(resp.Body)
 		if err := json.Unmarshal(respBody, &response); err != nil {
-			lw.LogError(transactionId, EC, "Cannot read response %s", err.Error())
+			lw.LogError(traceId, EC, "Cannot read response %s", err.Error())
 			sc.IncrementStat(STAT_FAILURES)
 			continue
 		}
 		resp.Body.Close()
 		if response.ResponseCode != RESPONSE_OK {
-			lw.LogError(transactionId, EC, "Server returned an error. Code %d", response.ResponseCode)
+			lw.LogError(traceId, EC, "Server returned an error. Code %d", response.ResponseCode)
 			sc.IncrementStat(STAT_FAILURES)
 		}
-		lw.LogDebug(transactionId, EC, "Received response from server %s", response.Message)
+		lw.LogDebug(traceId, EC, "Received response from server %s", response.Message)
 		sc.UpdateStat(STAT_BYTESRECEIVED, sc.GetStat(STAT_BYTESTRANS).(int)+len(respBody))
 		time.Sleep(300 * time.Millisecond)
 	}

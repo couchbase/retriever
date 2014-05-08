@@ -49,8 +49,8 @@ func HandleLoggerCmds(w http.ResponseWriter, r *http.Request) {
 		case "log":
 			pattern = DEFAULT_PATH + "/*.log*"
 			scanLogs(w, pattern)
-		case "transactionLog":
-			pattern = DEFAULT_PATH + "/trans_" + msg.Message + ".log"
+		case "traceLog":
+			pattern = DEFAULT_PATH + "/trace_" + msg.Message + ".log"
 			scanLogs(w, pattern)
 		case "level":
 			requestStr := "level:" + msg.Message
@@ -60,12 +60,12 @@ func HandleLoggerCmds(w http.ResponseWriter, r *http.Request) {
 			requestStr := "rotate:"
 			pattern = DEFAULT_PATH + "/*.sock"
 			sendCmdAll(w, requestStr, pattern)
-		case "transEnable":
-			requestStr := "trans:"
+		case "traceEnable":
+			requestStr := "trace:"
 			pattern = DEFAULT_PATH + "/*.sock"
 			sendCmdAll(w, requestStr, pattern)
-		case "transDisable":
-			requestStr := "transoff:"
+		case "traceDisable":
+			requestStr := "traceoff:"
 			pattern = DEFAULT_PATH + "/*.sock"
 			sendCmdAll(w, requestStr, pattern)
 		case "alarmSet":
@@ -89,14 +89,14 @@ func HandleLoggerCmds(w http.ResponseWriter, r *http.Request) {
 	switch msg.Cmd {
 	case "level":
 		requestStr = "level:" + msg.Message
-	case "transaction":
-		requestStr = "transaction:" + msg.Message
-	case "transactionLog":
+	case "trace":
+		requestStr = "trace:" + msg.Message
+	case "traceLog":
 		if msg.Message == "" {
-			http.Error(w, "Missing transaction Id", http.StatusInternalServerError)
+			http.Error(w, "Missing trace Id", http.StatusInternalServerError)
 			return
 		}
-		requestStr = "trans_" + msg.Message + ".log"
+		requestStr = "trace_" + msg.Message + ".log"
 		stream = true
 	case "log":
 		requestStr = module + ".log"
@@ -105,10 +105,10 @@ func HandleLoggerCmds(w http.ResponseWriter, r *http.Request) {
 		requestStr = "loglist:"
 	case "rotate":
 		requestStr = "rotate:"
-	case "transEnable":
-		requestStr = "trans:"
-	case "transDisable":
-		requestStr = "transoff:"
+	case "traceEnable":
+		requestStr = "trace:"
+	case "traceDisable":
+		requestStr = "traceoff:"
 	case "alarmSet":
 		requestStr = "alarm:" + msg.Message
 	case "alarmClear":

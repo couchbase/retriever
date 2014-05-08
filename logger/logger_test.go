@@ -21,11 +21,11 @@ func TestLogger(t *testing.T) {
 		t.Errorf("Failed ! %s", err.Error())
 	}
 	mylog.EnableKeys([]string{"test1", "test2", "test3", "test4"})
-	transId := "0x007"
-	mylog.LogDebug(transId, "test1", "hello dolly")
-	mylog.LogWarn(transId, "test2", " well hello ")
-	mylog.LogInfo(transId, "test5", "no logging this one")
-	mylog.LogInfo(transId, "test1", "this is an error ")
+	traceId := "0x007"
+	mylog.LogDebug(traceId, "test1", "hello dolly")
+	mylog.LogWarn(traceId, "test2", " well hello ")
+	mylog.LogInfo(traceId, "test5", "no logging this one")
+	mylog.LogInfo(traceId, "test1", "this is an error ")
 
 	mylog.SetLogLevel(LevelWarn)
 
@@ -37,29 +37,29 @@ func TestLogger(t *testing.T) {
 		t.Errorf("Failed ! Error %s", err.Error())
 	}
 
-	mylog.LogError(transId, "test2", "where has this one gone ")
+	mylog.LogError(traceId, "test2", "where has this one gone ")
 	mylog.DisableKeys([]string{"test3", "test4"})
-	mylog.LogError(transId, "test3", " no logging for me ")
+	mylog.LogError(traceId, "test3", " no logging for me ")
 	mylog.LogWarn("", "", "file test works !! ")
 
-	mylog.EnableTransactionLogging()
+	mylog.EnableTraceLogging()
 
-	mylog.LogError(transId, "test2", "this should go to the transaction log")
-	transId2 := "0666"
-	mylog.LogError(transId, "test1", "this should too ")
-	mylog.LogError(transId2, "test2", "goes to new one ")
-	mylog.LogError(transId, "test2", "goes to the first id")
-	mylog.LogError(transId2, "test1", "new file ")
+	mylog.LogError(traceId, "test2", "this should go to the traceaction log")
+	traceId2 := "0666"
+	mylog.LogError(traceId, "test1", "this should too ")
+	mylog.LogError(traceId2, "test2", "goes to new one ")
+	mylog.LogError(traceId, "test2", "goes to the first id")
+	mylog.LogError(traceId2, "test1", "new file ")
 
-	mylog.DisableTransactionLogging()
-	mylog.LogError(transId, "test1", "goes back to the file")
+	mylog.DisableTraceLogging()
+	mylog.LogError(traceId, "test1", "goes back to the file")
 
 	for i := 0; i < 5; i++ {
 		mylog.RegisterAlarm("http://localhost:9111/alarm/")
-		mylog.LogError(transId, "test1", "----Big time error---")
-		mylog.LogInfo(transId, "test1", "Info log")
-		mylog.LogWarn(transId, "test1", "Warning log")
-		mylog.LogDebug(transId, "test1", "Debug log")
+		mylog.LogError(traceId, "test1", "----Big time error---")
+		mylog.LogInfo(traceId, "test1", "Info log")
+		mylog.LogWarn(traceId, "test1", "Warning log")
+		mylog.LogDebug(traceId, "test1", "Debug log")
 		mylog.ClearAlarm()
 
 		time.Sleep(1 * time.Second)

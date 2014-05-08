@@ -77,10 +77,10 @@ func cmdHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	transactionId := fmt.Sprintf("%d", command.TransactionId)
+	traceId := fmt.Sprintf("%d", command.TransactionId)
 	bytesRecvd := sc.GetStat("bytesReceived").(int)
 	sc.UpdateStat("bytesReceived", bytesRecvd+int(r.ContentLength))
-	lw.LogDebug(transactionId, ES, "Received command %d message %s", command.Cmd, command.Message)
+	lw.LogDebug(traceId, ES, "Received command %d message %s", command.Cmd, command.Message)
 
 	response.TransactionId = command.TransactionId
 	response.ResponseCode = RESPONSE_OK
@@ -90,19 +90,19 @@ func cmdHandler(w http.ResponseWriter, r *http.Request) {
 		response.Message = "AOK"
 	case CMD_STATS:
 		response.Message = sc.GetAllStat()
-		lw.LogDebug(transactionId, ES, "Stats request received")
+		lw.LogDebug(traceId, ES, "Stats request received")
 	case CMD_DATA:
 		response.Message = answers[rand.Intn(len(answers))]
 	case CMD_RESTART:
 		response.Message = "Sorry, No can do "
-		lw.LogWarn(transactionId, ES, "Unable to restart at this point")
+		lw.LogWarn(traceId, ES, "Unable to restart at this point")
 	default:
 		sc.IncrementStat("Failures")
 		response.ResponseCode = RESPONSE_INVALID_CMD
-		lw.LogError(transactionId, ES, "Invalid command code %d", command.Cmd)
+		lw.LogError(traceId, ES, "Invalid command code %d", command.Cmd)
 	}
 
-	lw.LogDebug(transactionId, ES, "Response message %d message %s", response.ResponseCode, response.Message)
+	lw.LogDebug(traceId, ES, "Response message %d message %s", response.ResponseCode, response.Message)
 
 	respBody, err := json.Marshal(response)
 	sc.UpdateStat("bytesSent", sc.GetStat("bytesSent").(int)+len(respBody))
