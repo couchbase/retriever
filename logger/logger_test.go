@@ -32,7 +32,7 @@ func TestLogger(t *testing.T) {
 	mylog.LogDebug("", "", "not logging this one too ")
 	mylog.LogWarn("", "", "this one works ?")
 
-	err = mylog.SetFile("test.log")
+	err = mylog.SetFile()
 	if err != nil {
 		t.Errorf("Failed ! Error %s", err.Error())
 	}
@@ -55,6 +55,11 @@ func TestLogger(t *testing.T) {
 	mylog.LogError(traceId, "test1", "goes back to the file")
 
 	for i := 0; i < 5; i++ {
+		if i == 3 {
+			if err = mylog.SetDefaultPath("/tmp"); err != nil {
+				t.Errorf("Failed ! Error %s", err.Error())
+			}
+		}
 		mylog.RegisterAlarm("http://localhost:9111/alarm/")
 		mylog.LogError(traceId, "test1", "----Big time error---")
 		mylog.LogInfo(traceId, "test1", "Info log")

@@ -72,6 +72,7 @@ type LogWriter struct {
 	file           *os.File               // file handle of log file
 	alarmEnabled   bool                   // endpoint alarms enabled
 	alarmLogger    AlarmLogger            // instance of alarm logger
+	defaultPath    string                 // default logging path
 }
 
 type AlarmLogger struct {
@@ -120,16 +121,53 @@ func (lw *LogWriter) SetLogLevel(level logLevel) error {
 	return nil
 }
 
-// Set the output device
-func (lw *LogWriter) SetFile(path string) error {
-	lw.filePath = DEFAULT_PATH + "/" + path
+// Set the output device. Use module Id for name
+func (lw *LogWriter) SetFile() error {
+
+	if lw.defaultPath == "" {
+		lw.filePath = DEFAULT_PATH + "/" + lw.module + ".log"
+	} else {
+		lw.filePath = lw.defaultPath + "/" + lw.module + ".log"
+	}
+
 	fp, err := os.OpenFile(lw.filePath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		return fmt.Errorf("Unable to open file %s", err.Error())
 	}
-	//lw.w = bufio.NewWriter(fp)
+
 	lw.file = fp
 	lw.logger = log.New(fp, "", log.Lmicroseconds)
+	return nil
+}
+
+// set the default logging path. If trace logging is not enabled then only new trace
+// files will use the new default path.
+
+func (lw *LogWriter) SetDefaultPath(defaultPath string) error {
+
+	if len(defaultPath) == 0 {
+		return fmt.Errorf("No path specified")
+	}
+
+	if lw.defaultPath == defaultPath {
+		return nil
+	}
+
+	newPath := defaultPath + "/" + lw.module + ".log"
+	fp, err := os.OpenFile(newPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		return fmt.Errorf("Unable access path %s", err.Error())
+	}
+	lw.defaultPath = defaultPath
+
+	if lw.file != nil {
+		// switch the log file
+		lw.file.Close()
+		lw.file = fp
+		lw.filePath = newPath
+		lw.logger = log.New(fp, "", log.Lmicroseconds)
+	}
+
 	return nil
 }
 

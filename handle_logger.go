@@ -28,7 +28,6 @@ type message struct {
 
 func HandleLoggerCmds(w http.ResponseWriter, r *http.Request) {
 	msg := message{}
-	//err := r.DecodeJsonPayload(&msg)
 
 	params := mux.Vars(r)
 	module := params["module"]
@@ -96,10 +95,13 @@ func HandleLoggerCmds(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Missing trace Id", http.StatusInternalServerError)
 			return
 		}
-		requestStr = "trace_" + msg.Message + ".log"
+		requestStr = DEFAULT_PATH + "/" + "trace_" + msg.Message + ".log"
 		stream = true
 	case "log":
-		requestStr = module + ".log"
+		requestStr = DEFAULT_PATH + "/" + module + ".log"
+		stream = true
+	case "file":
+		requestStr = msg.Message
 		stream = true
 	case "loglist":
 		requestStr = "loglist:"
@@ -113,6 +115,8 @@ func HandleLoggerCmds(w http.ResponseWriter, r *http.Request) {
 		requestStr = "alarm:" + msg.Message
 	case "alarmClear":
 		requestStr = "alarmoff:"
+	case "path":
+		requestStr = "setpath:" + msg.Message
 	default:
 		http.Error(w, "Invalid Command", http.StatusInternalServerError)
 		return
@@ -142,7 +146,6 @@ func HandleLoggerCmds(w http.ResponseWriter, r *http.Request) {
 
 func streamLog(w http.ResponseWriter, filePath string) {
 
-	filePath = DEFAULT_PATH + "/" + filePath
 	file, err := os.OpenFile(filePath, os.O_RDWR, 0666)
 
 	rl.LogInfo("", LOGGER, "Opening file %s", filePath)
@@ -179,7 +182,6 @@ func sendCmd(c net.Conn, w http.ResponseWriter, message string) string {
 
 	// all okay return response to the client
 	return string(buf[0:n])
-
 }
 
 // send the command to all the units operating on this server

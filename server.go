@@ -34,7 +34,7 @@ func main() {
 		panic_msg := fmt.Sprintf("Cannot intialize logger %s", err.Error())
 		panic(panic_msg)
 	}
-	rl.SetFile("Retriever.log")
+	rl.SetFile()
 	rl.EnableKeys([]string{DEFAULT, LOGGER, "Stats"})
 
 	rl.LogInfo("", DEFAULT, "Retriever Server started")

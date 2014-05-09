@@ -14,11 +14,13 @@ func main() {
                 fmt.Sprintf("Cannot intialize logger %s", err.Error())                                 
         }
         // set logging to file
-        rl.SetFile("Retriever.log")
+        rl.SetFile("")
         // enable keys
         rl.EnableKeys([]string{DEFAULT_MODULE, "Logger", "Stats"}) 
         // Log Info message
         rl.LogInfo("", DEFAULT_MODULE, "Retriever Server started")
+        // Change the default log path. trace logs will still go to /tmp
+        err := rl.SetDefaultPath("/dev/shm")
 
         ....
 }

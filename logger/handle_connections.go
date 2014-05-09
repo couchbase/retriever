@@ -18,10 +18,16 @@ import (
 )
 
 func handleConnections(lw *LogWriter, module string) {
+	for {
+		doHandleConnections(lw, module)
+	}
+}
+
+func doHandleConnections(lw *LogWriter, module string) {
 
 	// create an I/O channel based on the module name
 	// for the server to connect to
-	sock := "/tmp/" + "log_" + module + ".sock"
+	sock := DEFAULT_PATH + "/log_" + module + ".sock"
 	os.Remove(sock)
 	listener, err := net.Listen("unix", sock)
 
@@ -31,6 +37,12 @@ func handleConnections(lw *LogWriter, module string) {
 
 	defer os.Remove(sock)
 	defer listener.Close()
+
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in f", r)
+		}
+	}()
 
 	for {
 		c, err := listener.Accept()
@@ -52,7 +64,7 @@ func handleConnections(lw *LogWriter, module string) {
 			setLevel(lw, cmds[1])
 			c.Write([]byte("OK"))
 		case strings.Contains(strings.ToLower(cmds[0]), "filelog"):
-			sendfile(cmds[1], c)
+			sendfile(lw.filePath, c)
 		case strings.Contains(strings.ToLower(cmds[0]), "rotate"):
 			// rotate the current log file
 			err := lw.Rotate()
@@ -73,6 +85,11 @@ func handleConnections(lw *LogWriter, module string) {
 			c.Write([]byte("OK"))
 		case strings.Contains(strings.ToLower(cmds[0]), "alarm"):
 			lw.RegisterAlarm(cmds[1])
+			c.Write([]byte("OK"))
+		case strings.Contains(strings.ToLower(cmds[0]), "setpath"):
+			if err = lw.SetDefaultPath(cmds[1]); err != nil {
+				c.Write([]byte(err.Error()))
+			}
 			c.Write([]byte("OK"))
 
 		}
@@ -99,8 +116,6 @@ func setLevel(lw *LogWriter, level string) {
 
 func sendfile(filePath string, c net.Conn) {
 
-	filePath = DEFAULT_PATH + "/" + filePath
-	fmt.Printf("Opening file %s", filePath)
 	file, err := os.OpenFile(filePath, os.O_RDWR, 0666)
 
 	if err != nil {

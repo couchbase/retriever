@@ -121,7 +121,7 @@ func main() {
 		panic("die")
 	}
 	lw.EnableKeys([]string{ES})
-	lw.SetFile("ExampleServer.log")
+	lw.SetFile()
 	sc, err = stats.NewStatsCollector(ES)
 	if err != nil {
 		lw.LogError("", ES, "Unable to initialize stats module %s", err.Error())
