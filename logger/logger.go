@@ -329,21 +329,22 @@ func cleanupMap(lw *LogWriter) {
 func (lw *LogWriter) logMessage(color string, traceId string, key string, format string, args ...interface{}) {
 	var logString string
 	lw.logCounter++
+
+	if lw.color == false {
+		color = reset
+	}
+
 	if traceId != "" {
-		logString = fmt.Sprintf("%s %s %s", key, traceId, fmt.Sprintf(format, args...))
+		logString = fmt.Sprintf("%s %s %s", color+key, reset+traceId, fmt.Sprintf(format, args...))
 	} else {
-		logString = fmt.Sprintf("%s None %s", key, fmt.Sprintf(format, args...))
+		logString = fmt.Sprintf("%s None %s", color+key, reset+fmt.Sprintf(format, args...))
 	}
 	if lw.traceMode == true && len(traceId) > 0 {
 		if lw.logTrace(traceId, logString) {
 			return
 		}
 	}
-	if lw.color {
-		lw.logger.Print(color, logString)
-	} else {
-		lw.logger.Print(logString)
-	}
+	lw.logger.Print(color, logString)
 }
 
 // log debug. trace id, component id, log message

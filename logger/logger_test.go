@@ -67,6 +67,7 @@ func TestLogger(t *testing.T) {
 		mylog.LogInfo(traceId, "test1", "Info log")
 		mylog.LogWarn(traceId, "test1", "Warning log")
 		mylog.LogDebug(traceId, "test1", "Debug log")
+		mylog.SetColor(false)
 		mylog.ClearAlarm()
 
 		time.Sleep(1 * time.Second)
