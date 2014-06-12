@@ -54,6 +54,8 @@ func TestLogger(t *testing.T) {
 	mylog.DisableTraceLogging()
 	mylog.LogError(traceId, "test1", "goes back to the file")
 
+	mylog.SetLogLevel(LevelDebug)
+
 	for i := 0; i < 5; i++ {
 		if i == 3 {
 			if err = mylog.SetDefaultPath("/tmp"); err != nil {
