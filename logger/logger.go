@@ -18,13 +18,29 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"runtime"
 	"sync"
 	"time"
 )
 
 type logLevel int
 
-const DEFAULT_PATH = "/tmp"
+func getDefaultPath() string {
+	if runtime.GOOS == "windows" {
+		return os.Getenv("tmp")
+	} else {
+		return "/tmp"
+	}
+}
+
+func pathSeparator() string {
+	if runtime.GOOS == "windows" {
+		return "\\"
+	} else {
+		return "/"
+	}
+}
+
 const MAX_CLEANUP_COUNTER = 300
 const MAX_LOCK_RETRY = 10
 
@@ -127,9 +143,9 @@ func (lw *LogWriter) SetLogLevel(level logLevel) error {
 func (lw *LogWriter) SetFile() error {
 
 	if lw.defaultPath == "" {
-		lw.filePath = DEFAULT_PATH + "/" + lw.module + ".log"
+		lw.filePath = getDefaultPath() + pathSeparator() + lw.module + ".log"
 	} else {
-		lw.filePath = lw.defaultPath + "/" + lw.module + ".log"
+		lw.filePath = lw.defaultPath + pathSeparator() + lw.module + ".log"
 	}
 
 	fp, err := os.OpenFile(lw.filePath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
@@ -250,14 +266,14 @@ func (lw *LogWriter) logTrace(traceId string, logString string) bool {
 	tl := lw.traceFileMap[traceId]
 	lw.traceMu.RUnlock()
 	if tl == nil {
-		filePath := DEFAULT_PATH + "/" + "trace_" + traceId + ".log"
+		filePath := getDefaultPath() + pathSeparator() + "trace_" + traceId + ".log"
 		file, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 		if err != nil {
 			lw.logger.Print("Logger: Unable to create trace file %s, Error %s", filePath, err.Error())
 			return false
 		}
 		logger = log.New(file, "", log.Lmicroseconds)
-		fileLockPath := DEFAULT_PATH + "/" + "trace_" + traceId + ".lock"
+		fileLockPath := getDefaultPath() + pathSeparator() + "trace_" + traceId + ".lock"
 		fl, _ := lockfile.New(fileLockPath)
 		tl = &TraceLogger{file: file, logger: logger, counter: lw.logCounter, fileLock: fl}
 		lw.traceMu.Lock()

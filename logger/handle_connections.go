@@ -11,90 +11,49 @@ package logger
 
 import (
 	"fmt"
-	"log"
 	"net"
 	"os"
 	"strings"
 )
 
-func handleConnections(lw *LogWriter, module string) {
-	for {
-		doHandleConnections(lw, module)
-	}
-}
+func handleCommand(lw *LogWriter, c net.Conn, cmds []string, data string) {
 
-func doHandleConnections(lw *LogWriter, module string) {
+	var err error
 
-	// create an I/O channel based on the module name
-	// for the server to connect to
-	sock := DEFAULT_PATH + "/log_" + module + ".sock"
-	os.Remove(sock)
-	listener, err := net.Listen("unix", sock)
-
-	if err != nil {
-		log.Fatal("Failed to listen ", err.Error())
-	}
-
-	defer os.Remove(sock)
-	defer listener.Close()
-
-	defer func() {
-		if r := recover(); r != nil {
-			fmt.Println("Recovered in f", r)
-		}
-	}()
-
-	for {
-		c, err := listener.Accept()
+	switch {
+	case strings.Contains(strings.ToLower(cmds[0]), "level"):
+		setLevel(lw, cmds[1])
+		c.Write([]byte("OK"))
+	case strings.Contains(strings.ToLower(cmds[0]), "filelog"):
+		sendfile(lw.filePath, c)
+	case strings.Contains(strings.ToLower(cmds[0]), "rotate"):
+		// rotate the current log file
+		err := lw.Rotate()
 		if err != nil {
-			fmt.Printf("Unable to accept " + err.Error()) // FIXME
-			continue
-		}
-		buf := make([]byte, 512)
-		nr, err := c.Read(buf)
-		if err != nil {
-			fmt.Printf(" Could not read from buffer %s", err.Error())
-			c.Close()
-			continue
-		}
-		data := string(buf[0:nr])
-		cmds := strings.SplitN(data, ":", 2)
-		switch {
-		case strings.Contains(strings.ToLower(cmds[0]), "level"):
-			setLevel(lw, cmds[1])
+			c.Write([]byte(err.Error()))
+		} else {
 			c.Write([]byte("OK"))
-		case strings.Contains(strings.ToLower(cmds[0]), "filelog"):
-			sendfile(lw.filePath, c)
-		case strings.Contains(strings.ToLower(cmds[0]), "rotate"):
-			// rotate the current log file
-			err := lw.Rotate()
-			if err != nil {
-				c.Write([]byte(err.Error()))
-			} else {
-				c.Write([]byte("OK"))
-			}
-		case strings.Contains(strings.ToLower(cmds[0]), "traceoff"):
-			lw.DisableTraceLogging()
-			c.Write([]byte("OK"))
+		}
+	case strings.Contains(strings.ToLower(cmds[0]), "traceoff"):
+		lw.DisableTraceLogging()
+		c.Write([]byte("OK"))
 
-		case strings.Contains(strings.ToLower(cmds[0]), "trace"):
-			lw.EnableTraceLogging()
-			c.Write([]byte("OK"))
-		case strings.Contains(strings.ToLower(cmds[0]), "alarmoff"):
-			lw.ClearAlarm()
-			c.Write([]byte("OK"))
-		case strings.Contains(strings.ToLower(cmds[0]), "alarm"):
-			lw.RegisterAlarm(cmds[1])
-			c.Write([]byte("OK"))
-		case strings.Contains(strings.ToLower(cmds[0]), "setpath"):
-			if err = lw.SetDefaultPath(cmds[1]); err != nil {
-				c.Write([]byte(err.Error()))
-			}
-			c.Write([]byte("OK"))
-
+	case strings.Contains(strings.ToLower(cmds[0]), "trace"):
+		lw.EnableTraceLogging()
+		c.Write([]byte("OK"))
+	case strings.Contains(strings.ToLower(cmds[0]), "alarmoff"):
+		lw.ClearAlarm()
+		c.Write([]byte("OK"))
+	case strings.Contains(strings.ToLower(cmds[0]), "alarm"):
+		lw.RegisterAlarm(cmds[1])
+		c.Write([]byte("OK"))
+	case strings.Contains(strings.ToLower(cmds[0]), "setpath"):
+		if err = lw.SetDefaultPath(cmds[1]); err != nil {
+			c.Write([]byte(err.Error()))
 		}
-		c.Close()
+		c.Write([]byte("OK"))
 	}
+
 }
 
 func setLevel(lw *LogWriter, level string) {

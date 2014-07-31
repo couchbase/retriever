@@ -13,7 +13,6 @@ import (
 	"encoding/json"
 	"github.com/gorilla/mux"
 	"io"
-	"net"
 	"net/http"
 	"strings"
 )
@@ -44,7 +43,7 @@ func HandleStatsCmds(w http.ResponseWriter, r *http.Request) {
 
 	// connect to the module to check if the target process is running
 	module_path := "/tmp/stats_" + module + ".sock"
-	c, err := net.Dial("unix", module_path)
+	c, err := connect(module_path)
 
 	if err != nil {
 		err_msg := "Module " + module + " not found.  Err  " + err.Error()

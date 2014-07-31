@@ -18,12 +18,29 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 )
 
 type message struct {
 	Cmd     string
 	Message string
+}
+
+func getDefaultPath() string {
+	if runtime.GOOS == "windows" {
+		return os.Getenv("tmp")
+	} else {
+		return "/tmp"
+	}
+}
+
+func pathSeparator() string {
+	if runtime.GOOS == "windows" {
+		return "\\"
+	} else {
+		return "/"
+	}
 }
 
 func HandleLoggerCmds(w http.ResponseWriter, r *http.Request) {
@@ -125,8 +142,8 @@ func HandleLoggerCmds(w http.ResponseWriter, r *http.Request) {
 
 	if stream == false {
 		// connect to the module to check if the target process is running
-		module_path := "/tmp/log_" + module + ".sock"
-		c, err := net.Dial("unix", module_path)
+		module_path := getDefaultPath() + pathSeparator() + "log_" + module + ".sock"
+		c, err := connect(module_path)
 
 		if err != nil {
 			err_msg := "Module " + module + " not found.  Err  " + err.Error()
@@ -201,7 +218,7 @@ func sendCmdAll(w http.ResponseWriter, message string, pattern string) {
 
 	fail := 0
 	for _, fileName := range fileList {
-		c, err := net.Dial("unix", fileName)
+		c, err := connect(fileName)
 
 		if err != nil {
 			fmt.Fprintf(w, "%s \n", err.Error())
