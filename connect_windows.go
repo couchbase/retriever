@@ -11,6 +11,7 @@ package main
 
 import (
 	"github.com/natefinch/npipe"
+	"net"
 )
 
 func connect(pathName string) (net.Conn, error) {

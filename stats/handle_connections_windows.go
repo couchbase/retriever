@@ -7,9 +7,7 @@
 //  either express or implied. See the License for the specific language governing permissions
 //  and limitations under the License.
 
-// +build windows
-
-package logger
+package stats
 
 import (
 	"fmt"
@@ -19,30 +17,26 @@ import (
 	"strings"
 )
 
-func handleConnections(lw *LogWriter, module string) {
-	for {
-		doHandleConnections(lw, module)
-	}
-}
-
 const DEFAULT_PIPE_PATH = `\\.\pipe\`
 
-func doHandleConnections(lw *LogWriter, module string) {
+func handleConnections(sc *StatsCollector) {
 
 	// create an I/O channel based on the module name
 	// for the server to connect to
-	pipename := DEFAULT_PIPE_PATH + "log_" + module + ".pipe"
-	os.Remove(pipename)
-	listener, err := npipe.Listen(pipename)
+	pipe := DEFAULT_PIPE_PATH + "stats_" + sc.Module + ".pipe"
+	os.Remove(pipe)
+	listener, err := npipe.Listen(pipe)
+
 	if err != nil {
-		log.Fatal("Failed to listen ", err.Error())
+		fmt.Printf("Failed to listen ", err.Error())
 	}
-	defer os.Remove(pipename)
+
+	defer os.Remove(pipe)
 	defer listener.Close()
 
 	// create a file entry for the pipe in the default pathname so that clients
 	// can discover the pipe entry
-	pipeEntry := getDefaultPath() + pathSeparator() + "log_" + module + ".sock"
+	pipeEntry := getDefaultPath() + "/stats_" + sc.Module + ".sock"
 	os.Remove(pipeEntry)
 
 	fp, err := os.OpenFile(pipeEntry, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
@@ -53,16 +47,10 @@ func doHandleConnections(lw *LogWriter, module string) {
 	defer fp.Close()
 	defer os.Remove(pipeEntry)
 
-	defer func() {
-		if r := recover(); r != nil {
-			fmt.Println("Recovered in f", r)
-		}
-	}()
-
 	for {
 		c, err := listener.Accept()
 		if err != nil {
-			fmt.Printf("Unable to accept " + err.Error()) // FIXME
+			fmt.Printf("Unable to accept " + err.Error())
 			continue
 		}
 		buf := make([]byte, 512)
@@ -73,8 +61,13 @@ func doHandleConnections(lw *LogWriter, module string) {
 			continue
 		}
 		data := string(buf[0:nr])
-		cmds := strings.SplitN(data, ":", 2)
-		handleCommand(lw, c, cmds, data)
+		cmds := strings.Split(data, ":")
+		switch {
+		case strings.Contains(strings.ToLower(cmds[0]), "stats"):
+			// rotate the current log file
+			statsOutput := sc.GetAllStat()
+			c.Write([]byte(statsOutput))
+		}
 		c.Close()
 	}
 }

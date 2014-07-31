@@ -18,7 +18,6 @@ import (
 
 var rl logger.LogWriter
 
-const DEFAULT_PATH = "/tmp"
 const DEFAULT = "Retriever"
 const LOGGER = "Logger"
 
@@ -29,7 +28,7 @@ func main() {
 	r.HandleFunc("/stats/{module}", HandleStatsCmds).Methods("GET", "PUT", "POST")
 	http.Handle("/", r)
 
-	rl, err := logger.NewLogger(DEFAULT, logger.LevelInfo)
+	rl, err := logger.NewLogger(DEFAULT, logger.LevelDebug)
 	if err != nil {
 		panic_msg := fmt.Sprintf("Cannot intialize logger %s", err.Error())
 		panic(panic_msg)

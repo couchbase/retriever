@@ -35,13 +35,7 @@ func getDefaultPath() string {
 	}
 }
 
-func pathSeparator() string {
-	if runtime.GOOS == "windows" {
-		return "\\"
-	} else {
-		return "/"
-	}
-}
+const DEFAULT_PIPE_PATH = `\\.\pipe\`
 
 func HandleLoggerCmds(w http.ResponseWriter, r *http.Request) {
 	msg := message{}
@@ -63,34 +57,34 @@ func HandleLoggerCmds(w http.ResponseWriter, r *http.Request) {
 		var pattern string
 		switch msg.Cmd {
 		case "log":
-			pattern = DEFAULT_PATH + "/*.log*"
+			pattern = getDefaultPath() + "/*.log*"
 			scanLogs(w, pattern)
 		case "traceLog":
-			pattern = DEFAULT_PATH + "/trace_" + msg.Message + ".log"
+			pattern = getDefaultPath() + "/trace_" + msg.Message + ".log"
 			scanLogs(w, pattern)
 		case "level":
 			requestStr := "level:" + msg.Message
-			pattern = DEFAULT_PATH + "/*.sock"
+			pattern = getDefaultPath() + "/*.sock"
 			sendCmdAll(w, requestStr, pattern)
 		case "rotate":
 			requestStr := "rotate:"
-			pattern = DEFAULT_PATH + "/*.sock"
+			pattern = getDefaultPath() + "/*.sock"
 			sendCmdAll(w, requestStr, pattern)
 		case "traceEnable":
 			requestStr := "trace:"
-			pattern = DEFAULT_PATH + "/*.sock"
+			pattern = getDefaultPath() + "/*.sock"
 			sendCmdAll(w, requestStr, pattern)
 		case "traceDisable":
 			requestStr := "traceoff:"
-			pattern = DEFAULT_PATH + "/*.sock"
+			pattern = getDefaultPath() + "/*.sock"
 			sendCmdAll(w, requestStr, pattern)
 		case "alarmSet":
 			requestStr := "alarm:" + msg.Message
-			pattern = DEFAULT_PATH + "/*.sock"
+			pattern = getDefaultPath() + "/*.sock"
 			sendCmdAll(w, requestStr, pattern)
 		case "alarmClear":
 			requestStr := "alarmoff:"
-			pattern = DEFAULT_PATH + "/*.sock"
+			pattern = getDefaultPath() + "/*.sock"
 			sendCmdAll(w, requestStr, pattern)
 		default:
 			http.Error(w, "Invalid Command", http.StatusInternalServerError)
@@ -112,10 +106,10 @@ func HandleLoggerCmds(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Missing trace Id", http.StatusInternalServerError)
 			return
 		}
-		requestStr = DEFAULT_PATH + "/" + "trace_" + msg.Message + ".log"
+		requestStr = getDefaultPath() + "/" + "trace_" + msg.Message + ".log"
 		stream = true
 	case "log":
-		requestStr = DEFAULT_PATH + "/" + module + ".log"
+		requestStr = getDefaultPath() + "/" + module + ".log"
 		stream = true
 	case "file":
 		requestStr = msg.Message
@@ -142,7 +136,13 @@ func HandleLoggerCmds(w http.ResponseWriter, r *http.Request) {
 
 	if stream == false {
 		// connect to the module to check if the target process is running
-		module_path := getDefaultPath() + pathSeparator() + "log_" + module + ".sock"
+		var module_path string
+		if runtime.GOOS == "windows" {
+			module_path = DEFAULT_PIPE_PATH + "log_" + module + ".pipe"
+		} else {
+			module_path = getDefaultPath() + "/" + "log_" + module + ".sock"
+		}
+
 		c, err := connect(module_path)
 
 		if err != nil {
@@ -192,7 +192,7 @@ func sendCmd(c net.Conn, w http.ResponseWriter, message string) string {
 	n, err := c.Read(buf[:])
 	if err != nil {
 		errMsg := "Error communicating with module. Reason : " + err.Error()
-		rl.LogWarn("", DEFAULT_PATH, errMsg)
+		rl.LogWarn("", getDefaultPath(), errMsg)
 		return errMsg
 
 	}
@@ -218,6 +218,15 @@ func sendCmdAll(w http.ResponseWriter, message string, pattern string) {
 
 	fail := 0
 	for _, fileName := range fileList {
+
+		if runtime.GOOS == "windows" {
+			// extract the module name from the filelist
+			basePath := filepath.Base(fileName)
+			splits := strings.Split(basePath, ".")
+			moduleName := splits[0]
+			fileName = DEFAULT_PIPE_PATH + moduleName + ".pipe"
+		}
+
 		c, err := connect(fileName)
 
 		if err != nil {

@@ -35,7 +35,7 @@ func getDefaultPath() string {
 
 func pathSeparator() string {
 	if runtime.GOOS == "windows" {
-		return "\\"
+		return "/"
 	} else {
 		return "/"
 	}
@@ -110,12 +110,25 @@ func NewLogger(module string, level logLevel) (*LogWriter, error) {
 		level = LevelWarn
 	}
 
-	lw := &LogWriter{module: module,
-		level:        level,
-		keyList:      make(map[string]bool),
-		logger:       log.New(os.Stderr, "", log.Lmicroseconds),
-		traceFileMap: make(map[string]interface{}),
-		color:        true,
+	var lw *LogWriter
+
+	if runtime.GOOS == "windows" {
+		// disable color logging on windows
+		lw = &LogWriter{module: module,
+			level:        level,
+			keyList:      make(map[string]bool),
+			logger:       log.New(os.Stderr, "", log.Lmicroseconds),
+			traceFileMap: make(map[string]interface{}),
+			color:        false,
+		}
+	} else {
+		lw = &LogWriter{module: module,
+			level:        level,
+			keyList:      make(map[string]bool),
+			logger:       log.New(os.Stderr, "", log.Lmicroseconds),
+			traceFileMap: make(map[string]interface{}),
+			color:        true,
+		}
 	}
 
 	lw.keyList["Default"] = true
@@ -350,17 +363,32 @@ func (lw *LogWriter) logMessage(color string, traceId string, key string, format
 		color = reset
 	}
 
-	if traceId != "" {
-		logString = fmt.Sprintf("%s %s %s", color+key, reset+traceId, fmt.Sprintf(format, args...))
+	// color formatting doesn't work on windows.
+	if runtime.GOOS == "windows" {
+		if traceId != "" {
+			logString = fmt.Sprintf("%s %s %s", key, traceId, fmt.Sprintf(format, args...))
+		} else {
+			logString = fmt.Sprintf("%s None %s", key, fmt.Sprintf(format, args...))
+		}
 	} else {
-		logString = fmt.Sprintf("%s None %s", color+key, reset+fmt.Sprintf(format, args...))
+		if traceId != "" {
+			logString = fmt.Sprintf("%s %s %s", color+key, reset+traceId, fmt.Sprintf(format, args...))
+		} else {
+			logString = fmt.Sprintf("%s None %s", color+key, reset+fmt.Sprintf(format, args...))
+		}
 	}
+
 	if lw.traceMode == true && len(traceId) > 0 {
 		if lw.logTrace(traceId, logString) {
 			return
 		}
 	}
-	lw.logger.Print(color, logString)
+
+	if runtime.GOOS == "windows" {
+		lw.logger.Print(logString)
+	} else {
+		lw.logger.Print(color, logString)
+	}
 }
 
 // log debug. trace id, component id, log message

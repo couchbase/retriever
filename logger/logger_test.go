@@ -10,6 +10,7 @@
 package logger
 
 import (
+	"runtime"
 	"testing"
 	"time"
 )
@@ -58,8 +59,11 @@ func TestLogger(t *testing.T) {
 
 	for i := 0; i < 5; i++ {
 		if i == 3 {
-			if err = mylog.SetDefaultPath("/tmp"); err != nil {
-				t.Errorf("Failed ! Error %s", err.Error())
+			if runtime.GOOS != "windows" {
+				if err = mylog.SetDefaultPath("/tmp"); err != nil {
+					t.Errorf("Failed ! Error %s", err.Error())
+				}
+
 			}
 		}
 		mylog.RegisterAlarm("http://localhost:9111/alarm/")

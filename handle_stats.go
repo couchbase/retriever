@@ -14,6 +14,7 @@ import (
 	"github.com/gorilla/mux"
 	"io"
 	"net/http"
+	"runtime"
 	"strings"
 )
 
@@ -36,13 +37,19 @@ func HandleStatsCmds(w http.ResponseWriter, r *http.Request) {
 	// Send commands to all modules
 	requestStr := "stats:"
 	if strings.ToLower(module) == "all" {
-		pattern := DEFAULT_PATH + "/stats_*.sock"
+		pattern := getDefaultPath() + "/stats_*.sock"
 		sendCmdAll(w, requestStr, pattern)
 		return
 	}
 
 	// connect to the module to check if the target process is running
-	module_path := "/tmp/stats_" + module + ".sock"
+	var module_path string
+	if runtime.GOOS == "windows" {
+		module_path = DEFAULT_PIPE_PATH + "stats_" + module + ".pipe"
+	} else {
+		module_path = getDefaultPath() + "/stats_" + module + ".sock"
+	}
+
 	c, err := connect(module_path)
 
 	if err != nil {
