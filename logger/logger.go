@@ -23,7 +23,7 @@ import (
 	"time"
 )
 
-type logLevel int
+type LogLevel int8
 
 func getDefaultPath() string {
 	if runtime.GOOS == "windows" {
@@ -45,7 +45,7 @@ const MAX_CLEANUP_COUNTER = 300
 const MAX_LOCK_RETRY = 10
 
 const (
-	LevelError = logLevel(iota)
+	LevelError = LogLevel(iota)
 	LevelWarn
 	LevelInfo
 	LevelDebug
@@ -75,7 +75,7 @@ type AlarmMessage struct {
 
 type LogWriter struct {
 	module         string                 // name of logging module
-	level          logLevel               // current log leve
+	level          LogLevel               // current log leve
 	keyList        map[string]bool        // list of enabled keys
 	mu             sync.Mutex             // mutex for this structure
 	logger         *log.Logger            // instance of logger module
@@ -99,7 +99,7 @@ type AlarmLogger struct {
 }
 
 // Create a new instance of a logWriter
-func NewLogger(module string, level logLevel) (*LogWriter, error) {
+func NewLogger(module string, level LogLevel) (*LogWriter, error) {
 
 	if module == "" {
 		return nil, fmt.Errorf("Required module name")
@@ -143,7 +143,7 @@ type Message struct {
 }
 
 // Set the log level
-func (lw *LogWriter) SetLogLevel(level logLevel) error {
+func (lw *LogWriter) SetLogLevel(level LogLevel) error {
 
 	if lw.level > LevelDebug || lw.level < LevelError {
 		return fmt.Errorf("Log level unchanged")
