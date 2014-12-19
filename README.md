@@ -93,3 +93,8 @@ Stats
 curl -v -i http://localhost:8080/stats/ExampleServer
 
 curl -v -i http://localhost:8080/stats/all
+
+License
+=======
+
+Apache 2
