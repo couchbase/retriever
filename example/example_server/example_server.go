@@ -3,8 +3,8 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/couchbaselabs/retriever/logger"
-	"github.com/couchbaselabs/retriever/stats"
+	"github.com/couchbase/retriever/logger"
+	"github.com/couchbase/retriever/stats"
 	"math/rand"
 	"net/http"
 )

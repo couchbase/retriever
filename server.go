@@ -11,7 +11,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/couchbaselabs/retriever/logger"
+	"github.com/couchbase/retriever/logger"
 	"github.com/gorilla/mux"
 	"net/http"
 )

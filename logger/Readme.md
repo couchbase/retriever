@@ -1,5 +1,5 @@
 This package exports logging APIs that can be used to log to a file or a remote server
-See the package documentation at [GoDoc] http://godoc.org/github.com/couchbaselabs/retriever/logger
+See the package documentation at [GoDoc] http://godoc.org/github.com/couchbase/retriever/logger
 
 Usage:
 

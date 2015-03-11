@@ -13,7 +13,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/couchbaselabs/retriever/lockfile"
+	"github.com/couchbase/retriever/lockfile"
 	"io/ioutil"
 	"log"
 	"net/http"
